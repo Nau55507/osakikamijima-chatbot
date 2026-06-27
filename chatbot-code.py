@@ -299,7 +299,7 @@ else:
                         yield "申し訳ございません。ただいま回答することが困難です。"
                         return
 
-            full_response = st.write_stream(stream_gemini_response())
+        full_response = st.write_stream(stream_gemini_response())
         
         st.session_state.messages.append({"role": "assistant", "content": full_response})
         st.rerun()
