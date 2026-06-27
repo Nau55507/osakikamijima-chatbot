@@ -239,12 +239,10 @@ else:
 
                 search_tool = types.Tool(google_search=types.GoogleSearch())
 
-                # 💡 ユーザーに安心感を与えるためのステータス表示枠を作成
                 status_placeholder = st.empty()
                 status_placeholder.markdown("🔍 *インターネット上で最新情報を検索中...*")
 
                 try:
-                    # 1. まずはWeb検索（RAG）を試みる
                     response_stream = client.models.generate_content_stream(
                         model='gemini-2.5-flash',
                         contents=formatted_contents,
@@ -256,15 +254,14 @@ else:
                     )
                     for chunk in response_stream:
                         if chunk.text:
-                            status_placeholder.empty() # 返答が始まったらステータスを消す
+                            status_placeholder.empty() 
                             yield chunk.text
                     return 
                     
                 except ClientError as e:
                     # 2. クォータ超過（429）を検知した場合
                     if e.code == 429:
-                        # 💡 画面の表示を切り替えて処理が進んでいることを伝える
-                        status_placeholder.markdown("📋 *回線混雑のため、内蔵ナレッジベース（knowledge.txt）に切り替えて確認中...*")
+                        status_placeholder.markdown("*回線混雑のため、内蔵ナレッジベース（knowledge.txt）に切り替えて確認中...*")
                         
                         try:
                             fallback_instruction = (
