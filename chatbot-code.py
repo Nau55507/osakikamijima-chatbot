@@ -278,7 +278,7 @@ else:
                         )
 
                 search_tool = types.Tool(google_search=types.GoogleSearch())
-                status_placeholder.markdown("🔍 *インターネット上で最新情報を検索中...*")
+                status_placeholder.markdown("🔍 *インターネット上で情報を検索中...*")
 
                 try:
                     response_stream = client.models.generate_content_stream(
