@@ -287,7 +287,7 @@ else:
                         config=types.GenerateContentConfig(
                             system_instruction=system_instruction,
                             tools=[search_tool],
-                            temperature=0.7
+                            temperature=0.1
                         )
                     )
                     for chunk in response_stream:
