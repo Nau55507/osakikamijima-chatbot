@@ -8,16 +8,16 @@ import io
 import os
 import time
 
+START_ICON_PATH = "start_icon.png"
+BOT_ICON_PATH = "bot_icon.png"
+assistant_icon = BOT_ICON_PATH if os.path.exists(BOT_ICON_PATH) else "🤖"
+
 st.set_page_config(
     page_title="大崎上島 チャットボット", 
     page_icon=START_ICON_PATH, 
     layout="centered",
     initial_sidebar_state="expanded"
 )
-
-START_ICON_PATH = "start_icon.png"
-BOT_ICON_PATH = "bot_icon.png"
-assistant_icon = BOT_ICON_PATH if os.path.exists(BOT_ICON_PATH) else "🤖"
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
