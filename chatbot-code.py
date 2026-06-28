@@ -14,7 +14,7 @@ assistant_icon = BOT_ICON_PATH if os.path.exists(BOT_ICON_PATH) else "🤖"
 
 st.set_page_config(
     page_title="大崎上島 チャットボット", 
-    page_icon=START_ICON_PATH, 
+    page_icon=BOT_ICON_PATH, 
     layout="centered",
     initial_sidebar_state="expanded"
 )
