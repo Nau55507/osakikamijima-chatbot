@@ -4,12 +4,13 @@ from google import genai
 from google.genai import types
 from google.genai.errors import ClientError
 import PIL.Image
+import io
 import os
 import time
 
 st.set_page_config(
     page_title="大崎上島 チャットボット", 
-    page_icon="🏝️", 
+    page_icon=START_ICON_PATH, 
     layout="centered",
     initial_sidebar_state="expanded"
 )
@@ -100,17 +101,38 @@ else:
             background-attachment: fixed;
         }}
         
-        .main .block-container {{
-            background-color: rgba(255, 255, 255, 0.85) !important;
-            backdrop-filter: blur(1px);
-            border-radius: 20px;
-            padding: 3rem;
+        @media (prefers-color-scheme: dark) {{
+            .main .block-container {{
+                background-color: rgba(27, 28, 34, 0.85) !important;
+                backdrop-filter: blur(1px);
+                border-radius: 20px;
+                padding: 3rem;
+            }}
+            .stChatMessage {{
+                background-color: rgba(43, 44, 54, 0.9) !important;
+                color: #fafafa !important;
+                border-radius: 15px;
+                margin-bottom: 10px;
+            }}
         }}
 
-        .stChatMessage {{
-            background-color: rgba(240, 242, 246, 0.85) !important;
-            border-radius: 15px;
-            margin-bottom: 10px;
+        @media (prefers-color-scheme: light) {{
+            .main .block-container {{
+                background-color: rgba(255, 255, 255, 0.85) !important;
+                backdrop-filter: blur(1px);
+                border-radius: 20px;
+                padding: 3rem;
+            }}
+            .stChatMessage {{
+                background-color: rgba(240, 242, 246, 0.9) !important;
+                color: #31333F !important;
+                border-radius: 15px;
+                margin-bottom: 10px;
+            }}
+        }}
+
+        .stChatMessage p, .stChatMessage span, .stChatMessage div {{
+            color: inherit !important;
         }}
 
         .stChatMessage img {{
@@ -221,25 +243,41 @@ else:
 
     if len(st.session_state.messages) > 0 and st.session_state.messages[-1]["role"] == "user":
         with st.chat_message("assistant", avatar=assistant_icon):
+            status_placeholder = st.empty()
             
-           def stream_gemini_response():
+            def stream_gemini_response():
                 formatted_contents = []
                 recent_messages = st.session_state.messages[-6:]
                 
                 for msg in recent_messages:
                     if msg == recent_messages[-1] and msg["role"] == "user" and image is not None:
+                        img_byte_arr = io.BytesIO()
+                        image_format = image.format if image.format else "PNG"
+                        image.save(img_byte_arr, format=image_format)
+                        img_bytes = img_byte_arr.getvalue()
+                        mime_type = f"image/{image_format.lower()}"
+                        if mime_type == "image/jpg":
+                            mime_type = "image/jpeg"
+                        
                         formatted_contents.append(
-                            types.Content(role="user", parts=[image, types.Part.from_text(text=msg["content"])])
+                            types.Content(
+                                role="user",
+                                parts=[
+                                    types.Part.from_bytes(data=img_bytes, mime_type=mime_type),
+                                    types.Part.from_text(text=msg["content"])
+                                ]
+                            )
                         )
                     else:
                         role_map = "user" if msg["role"] == "user" else "model"
                         formatted_contents.append(
-                            types.Content(role=role_map, parts=[types.Part.from_text(text=msg["content"])])
+                            types.Content(
+                                role=role_map,
+                                parts=[types.Part.from_text(text=msg["content"])]
+                            )
                         )
 
                 search_tool = types.Tool(google_search=types.GoogleSearch())
-
-                status_placeholder = st.empty()
                 status_placeholder.markdown("🔍 *インターネット上で最新情報を検索中...*")
 
                 try:
@@ -254,15 +292,13 @@ else:
                     )
                     for chunk in response_stream:
                         if chunk.text:
-                            status_placeholder.empty() 
+                            status_placeholder.empty()
                             yield chunk.text
                     return 
                     
                 except ClientError as e:
-                    # 2. クォータ超過（429）を検知した場合
                     if e.code == 429:
-                        status_placeholder.markdown("*回線混雑のため、内蔵ナレッジベース（knowledge.txt）に切り替えて確認中...*")
-                        
+                        status_placeholder.markdown("📋 *回線混雑のため、内蔵ナレッジベース（knowledge.txt）に切り替えて確認中...*")
                         try:
                             fallback_instruction = (
                                 system_instruction + 
@@ -272,14 +308,13 @@ else:
                                 "他の言葉を一切付け加えずに、必ず『申し訳ございません。ただいま回答することが困難です。』とだけ返答してください。"
                             )
                             
-                            # 3. 検索ツールを外して、knowledge.txtのみを参照して再試行
                             response_stream = client.models.generate_content_stream(
                                 model='gemini-2.5-flash',
                                 contents=formatted_contents,
                                 config=types.GenerateContentConfig(
                                     system_instruction=fallback_instruction,
                                     tools=[], 
-                                    temperature=0.1 # 回答の厳密性を上げるために下げる
+                                    temperature=0.1
                                 )
                             )
                             for chunk in response_stream:
@@ -296,7 +331,8 @@ else:
                         yield "申し訳ございません。ただいま回答することが困難です。"
                         return
 
-        full_response = st.write_stream(stream_gemini_response())
+            full_response = st.write_stream(stream_gemini_response())
+            status_placeholder.empty()
         
         st.session_state.messages.append({"role": "assistant", "content": full_response})
         st.rerun()
