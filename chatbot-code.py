@@ -295,38 +295,37 @@ else:
                             status_placeholder.empty()
                             yield chunk.text
                     return 
-                    
-                except ClientError as e:
-                    if e.code == 429:
+
+                except Exception as e:
+                    if hasattr(e, 'code') and e.code == 429:
                         status_placeholder.markdown("📋 *回線混雑のため、内蔵ナレッジベース（knowledge.txt）に切り替えて確認中...*")
-                        try:
-                            fallback_instruction = (
-                                system_instruction + 
-                                "\n\n【緊急指示】現在システム制限（クォータ制限）が発生しています。"
-                                "Web検索は使わず、あなたの持っている大崎上島ナレッジベース（上記の知識）だけを使って回答してください。"
-                                "もし上記の知識の中にユーザーの質問に答えるための明確な情報がない場合は、"
-                                "他の言葉を一切付け加えずに、必ず『申し訳ございません。ただいま回答することが困難です。』とだけ返答してください。"
-                            )
-                            
-                            response_stream = client.models.generate_content_stream(
-                                model='gemini-2.5-flash',
-                                contents=formatted_contents,
-                                config=types.GenerateContentConfig(
-                                    system_instruction=fallback_instruction,
-                                    tools=[], 
-                                    temperature=0.1
-                                )
-                            )
-                            for chunk in response_stream:
-                                if chunk.text:
-                                    status_placeholder.empty()
-                                    yield chunk.text
-                            return
-                        except Exception:
-                            status_placeholder.empty()
-                            yield "申し訳ございません。ただいま回答することが困難です。"
-                            return
                     else:
+                        status_placeholder.markdown("📋 *一時的なシステムエラーのため、内蔵ナレッジベース（knowledge.txt）に切り替えて確認中...*")
+    
+                    try:
+                        fallback_instruction = (
+                            system_instruction + 
+                            "\n\n【緊急指示】現在システム制限または一時的なサーバーエラーが発生しています。"
+                            "Web検索は使わず、あなたの持っている大崎上島ナレッジベース（上記の知識）だけを使って回答してください。"
+                            "もし上記の知識の中にユーザーの質問に答えるための明確な情報がない場合は、"
+                            "他の言葉を一切付け加えずに、必ず『申し訳ございません。ただいま回答することが困難です。』とだけ返答してください。"
+                        )
+        
+                        response_stream = client.models.generate_content_stream(
+                            model='gemini-2.5-flash',
+                            contents=formatted_contents,
+                            config=types.GenerateContentConfig(
+                                system_instruction=fallback_instruction,
+                                tools=[], 
+                                temperature=0.1
+                            )
+                        )
+                        for chunk in response_stream:
+                            if chunk.text:
+                                status_placeholder.empty()
+                                yield chunk.text
+                        return
+                    except Exception:
                         status_placeholder.empty()
                         yield "申し訳ございません。ただいま回答することが困難です。"
                         return
